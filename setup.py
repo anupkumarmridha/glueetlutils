@@ -9,8 +9,8 @@ setup(
     url="https://github.com/yourusername/datatransformutils",
     packages=find_packages(),
     install_requires=[
-        "pyspark>=3.3.0",
-        "aws-glue-sdk>=1.0.0",
+        'pyspark',
+        'awsglue',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
