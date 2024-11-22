@@ -30,14 +30,6 @@ jobs:
       run: |
         pip install dist/*.whl
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v3
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-        aws-region: ${{ secrets.CODEARTIFACT_REGION }}
-
     - name: Authenticate with AWS CodeArtifact
       run: |
         DOMAIN=${{ secrets.CODEARTIFACT_DOMAIN }}
@@ -45,8 +37,14 @@ jobs:
         REPO=${{ secrets.CODEARTIFACT_REPO }}
         REGION=${{ secrets.CODEARTIFACT_REGION }}
         CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain $DOMAIN --domain-owner $ACCOUNT_ID --region $REGION --query authorizationToken --output text)
-        pip config set global.index-url https://aws:$CODEARTIFACT_AUTH_TOKEN@$DOMAIN-$ACCOUNT_ID.d.codeartifact.$REGION.amazonaws.com/pypi/$REPO/simple/
+        echo "[distutils]" > ~/.pypirc
+        echo "index-servers =" >> ~/.pypirc
+        echo "    codeartifact" >> ~/.pypirc
+        echo "[codeartifact]" >> ~/.pypirc
+        echo "repository: https://$DOMAIN-$ACCOUNT_ID.d.codeartifact.$REGION.amazonaws.com/pypi/$REPO/" >> ~/.pypirc
+        echo "username: aws" >> ~/.pypirc
+        echo "password: $CODEARTIFACT_AUTH_TOKEN" >> ~/.pypirc
 
     - name: Upload to AWS CodeArtifact
       run: |
-        twine upload dist/*
+        twine upload --non-interactive dist/*
