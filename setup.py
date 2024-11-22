@@ -4,13 +4,12 @@ setup(
     name="datatransformutils",
     version="0.1.0",
     description="Reusable data transformation utilities for AWS Glue using PySpark",
-    author="Your Name",
-    author_email="your.email@example.com",
-    url="https://github.com/yourusername/datatransformutils",
+    author="Anup Kumar Mridha",
+    author_email="anupkumarmridha.net@gmail.com",
+    url="https://github.com/anupkumarmridha/datatransformutils",
     packages=find_packages(),
     install_requires=[
         'pyspark',
-        'awsglue',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
