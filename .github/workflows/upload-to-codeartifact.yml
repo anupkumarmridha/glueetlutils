@@ -1,0 +1,51 @@
+name: Build and Upload to AWS CodeArtifact
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+
+    - name: Install Dependencies
+      run: |
+        pip install setuptools wheel twine boto3
+
+    - name: Build the Package
+      run: |
+        python setup.py sdist bdist_wheel
+
+    - name: Test the Package Build
+      run: |
+        pip install dist/*.whl
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.CODEARTIFACT_REGION }}
+
+    - name: Authenticate with AWS CodeArtifact
+      run: |
+        DOMAIN=${{ secrets.CODEARTIFACT_DOMAIN }}
+        ACCOUNT_ID=${{ secrets.CODEARTIFACT_ACCOUNT_ID }}
+        REPO=${{ secrets.CODEARTIFACT_REPO }}
+        REGION=${{ secrets.CODEARTIFACT_REGION }}
+        CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain $DOMAIN --domain-owner $ACCOUNT_ID --region $REGION --query authorizationToken --output text)
+        pip config set global.index-url https://aws:$CODEARTIFACT_AUTH_TOKEN@$DOMAIN-$ACCOUNT_ID.d.codeartifact.$REGION.amazonaws.com/pypi/$REPO/simple/
+
+    - name: Upload to AWS CodeArtifact
+      run: |
+        twine upload dist/*
