@@ -2,6 +2,13 @@ from pyspark.sql import DataFrame
 from pyspark.sql.functions import col, lit, when, regexp_replace, upper, lower, trim, countDistinct
 from awsglue.dynamicframe import DynamicFrame
 from awsglue.context import GlueContext
+from pyspark.sql.window import Window
+from pyspark.sql.functions import rank, row_number
+        
+from pyspark.ml.feature import StringIndexer
+from pyspark.sql.functions import mean
+from pyspark.ml.feature import Bucketizer
+from pyspark.sql.functions import concat_ws
 
 from pyspark.sql.functions import udf
 from pyspark.sql.types import StringType
@@ -399,6 +406,154 @@ class DataTransformUtils:
             return self.dataframe_to_dynamicframe(df, "pivoted_data")
         except Exception as e:
             raise ValueError(f"Error pivoting data: {e}")
+        
+    def unpivot_data(self, dynamic_frame: DynamicFrame, unpivot_columns: list, key_column: str, value_column: str) -> DynamicFrame:
+        """
+        Unpivot specified columns to rows.
+        
+        :param dynamic_frame: Glue DynamicFrame to transform.
+        :param unpivot_columns: List of columns to unpivot.
+        :param key_column: Name of the new key column.
+        :param value_column: Name of the new value column.
+        :return: Unpivoted DynamicFrame.
+        """
+        try:
+            df = self.dynamicframe_to_dataframe(dynamic_frame)
+            df = df.selectExpr(f"stack({len(unpivot_columns)}, {', '.join([f'\"{col}\", {col}' for col in unpivot_columns])}) as ({key_column}, {value_column})")
+            return self.dataframe_to_dynamicframe(df, "unpivoted_data")
+        except Exception as e:
+            raise ValueError(f"Error unpivoting data: {e}")
+        
+        
+
+
+    def apply_window_function(self, dynamic_frame: DynamicFrame, partition_by: list, order_by: str, function: str) -> DynamicFrame:
+        """
+        Apply a window function (e.g., rank, row_number) to a DynamicFrame.
+        
+        :param dynamic_frame: Glue DynamicFrame to transform.
+        :param partition_by: List of columns to partition by.
+        :param order_by: Column to order by.
+        :param function: Window function to apply (e.g., "rank", "row_number").
+        :return: DynamicFrame with the window function applied.
+        """
+        try:
+            df = self.dynamicframe_to_dataframe(dynamic_frame)
+            window_spec = Window.partitionBy(*partition_by).orderBy(order_by)
+
+            if function == "rank":
+                df = df.withColumn("rank", rank().over(window_spec))
+            elif function == "row_number":
+                df = df.withColumn("row_number", row_number().over(window_spec))
+            else:
+                raise ValueError(f"Unsupported window function: {function}")
+
+            return self.dataframe_to_dynamicframe(df, "window_function_applied")
+        except Exception as e:
+            raise ValueError(f"Error applying window function: {e}")
+
+
+    def encode_categorical_columns(self, dynamic_frame: DynamicFrame, columns: list) -> DynamicFrame:
+        """
+        Convert categorical columns to numeric representations.
+        
+        :param dynamic_frame: Glue DynamicFrame to transform.
+        :param columns: List of categorical columns to encode.
+        :return: DynamicFrame with categorical columns encoded.
+        """
+        try:
+            df = self.dynamicframe_to_dataframe(dynamic_frame)
+            for column in columns:
+                indexer = StringIndexer(inputCol=column, outputCol=f"{column}_index")
+                df = indexer.fit(df).transform(df)
+            return self.dataframe_to_dynamicframe(df, "encoded_categorical_columns")
+        except Exception as e:
+            raise ValueError(f"Error encoding categorical columns: {e}")
+
+
+
+    def impute_missing_values(self, dynamic_frame: DynamicFrame, columns: list, method: str = "mean") -> DynamicFrame:
+        """
+        Impute missing values in specified columns using a statistical method.
+        
+        :param dynamic_frame: Glue DynamicFrame to transform.
+        :param columns: List of columns to impute missing values.
+        :param method: Method to use for imputation (e.g., "mean", "median").
+        :return: DynamicFrame with missing values imputed.
+        """
+        try:
+            df = self.dynamicframe_to_dataframe(dynamic_frame)
+            for column in columns:
+                if method == "mean":
+                    mean_value = df.select(mean(col(column))).collect()[0][0]
+                    df = df.fillna({column: mean_value})
+                else:
+                    raise ValueError(f"Unsupported imputation method: {method}")
+            return self.dataframe_to_dynamicframe(df, "imputed_missing_values")
+        except Exception as e:
+            raise ValueError(f"Error imputing missing values: {e}")
+        
+
+
+    def bucketize_column(self, dynamic_frame: DynamicFrame, column: str, splits: list, output_column: str) -> DynamicFrame:
+        """
+        Bucketize a numerical column into bins.
+        
+        :param dynamic_frame: Glue DynamicFrame to transform.
+        :param column: Column to bucketize.
+        :param splits: List of split points defining the bins.
+        :param output_column: Name for the output bucketized column.
+        :return: DynamicFrame with the bucketized column.
+        """
+        try:
+            df = self.dynamicframe_to_dataframe(dynamic_frame)
+            bucketizer = Bucketizer(splits=splits, inputCol=column, outputCol=output_column)
+            df = bucketizer.transform(df)
+            return self.dataframe_to_dynamicframe(df, "bucketized_column")
+        except Exception as e:
+            raise ValueError(f"Error bucketizing column: {e}")
+        
+
+
+    def concatenate_columns(self, dynamic_frame: DynamicFrame, columns: list, output_column: str, separator: str = " ") -> DynamicFrame:
+        """
+        Concatenate multiple columns into a single column.
+        
+        :param dynamic_frame: Glue DynamicFrame to transform.
+        :param columns: List of columns to concatenate.
+        :param output_column: Name of the new concatenated column.
+        :param separator: Separator to use between concatenated values.
+        :return: DynamicFrame with concatenated columns.
+        """
+        try:
+            df = self.dynamicframe_to_dataframe(dynamic_frame)
+            df = df.withColumn(output_column, concat_ws(separator, *[col(column) for column in columns]))
+            return self.dataframe_to_dynamicframe(df, "concatenated_columns")
+        except Exception as e:
+            raise ValueError(f"Error concatenating columns: {e}")
+        
+    def validate_schema(self, dynamic_frame: DynamicFrame, expected_schema: dict) -> bool:
+        """
+        Validate if the schema matches an expected structure.
+        
+        :param dynamic_frame: Glue DynamicFrame to validate.
+        :param expected_schema: Dictionary with column names as keys and expected types as values.
+        :return: Boolean indicating if schema matches expected schema.
+        """
+        try:
+            df = self.dynamicframe_to_dataframe(dynamic_frame)
+            actual_schema = {field.name: field.dataType for field in df.schema.fields}
+            for column, data_type in expected_schema.items():
+                if column not in actual_schema or str(actual_schema[column]) != str(data_type):
+                    return False
+            return True
+        except Exception as e:
+            raise ValueError(f"Error validating schema: {e}")
+
+
+
+
+
 
 
 

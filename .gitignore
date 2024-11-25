@@ -1,0 +1,3 @@
+.env
+.get_auth_token.sh
+.auth_token.txt
