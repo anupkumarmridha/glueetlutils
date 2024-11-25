@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="datatransformutils",
-    version="0.1.0",
+    version="0.1.1",
     description="Reusable data transformation utilities for AWS Glue using PySpark",
     author="Anup Kumar Mridha",
     author_email="anupkumarmridha.net@gmail.com",
