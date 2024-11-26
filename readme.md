@@ -9,6 +9,83 @@
 - PySpark
 - Python
 
+To incorporate the **`DataTransformUtils`** package and ensure it works seamlessly in your AWS Glue job, you need to follow these steps:
+
+---
+
+### **1. Install the Package in AWS Glue**
+AWS Glue jobs support adding external Python packages. Here’s how you set up the `DataTransformUtils` package.
+
+#### **Set Job Parameters**
+When creating or updating your Glue job, add the following parameters:
+
+1. **Parameter:** `--additional-python-modules`
+   - **Value:** `datatransformutils==0.1.1`
+
+2. **Parameter:** `--python-modules-installer-option`
+   - **Value:**
+     ```
+     --no-cache-dir --verbose --index-url https://aws:<CODEARTIFACT-AUTH-TOKEN>@<DOMAIN-NAME>-<ACCOUNT-ID>.d.codeartifact.<REGION-NAME>.amazonaws.com/pypi/pypi-store/simple/
+     ```
+
+---
+
+### **2. Generating the `--python-modules-installer-option` Value**
+
+#### **Authenticate with AWS CLI**
+1. Run the following command to authenticate with CodeArtifact:
+   ```bash
+   aws codeartifact login --tool pip --repository <REPO-NAME> --domain <DOMAIN-NAME> --domain-owner <ACCOUNT-ID>
+   ```
+
+2. Use the **`generate_codeartifact_url.sh`** script to generate the installer URL:
+   - Place the `generate_codeartifact_url.sh` script in your local repository.
+   - Execute the script:
+     ```bash
+     ./generate_codeartifact_url.sh
+     ```
+   - The result will be saved in the `pip_codeartifact_url.txt` file.
+
+3. Extract the value from `pip_codeartifact_url.txt` and use it for `--python-modules-installer-option`.
+
+---
+
+### **3. Glue Network Connection**
+If your Glue job runs in a **VPC**, you need to configure a **Glue Network Connection** to access the CodeArtifact repository:
+
+1. Go to the **AWS Glue Console** → **Connections** → **Create Connection**.
+2. Choose **VPC** for the connection type.
+3. Provide the subnet and security group details that allow access to the CodeArtifact endpoint.
+4. Attach this connection to your Glue job under **Network Options**.
+
+---
+
+### **4. Python Script Example**
+Here’s how to initialize and use the `DataTransformUtils` class in your Glue job:
+
+```python
+from awsglue.context import GlueContext
+from pyspark.context import SparkContext
+from datatransformutils import DataTransformUtils
+
+sc = SparkContext()
+glueContext = GlueContext(sc)
+
+# Initialize DataTransformUtils
+data_transform_utils = DataTransformUtils(glueContext)
+
+# Example Usage
+s3_data_dyf = glueContext.create_dynamic_frame.from_catalog(database="your_db", table_name="your_table")
+
+# Rename columns using DataTransformUtils
+renamed_dyf = data_transform_utils.rename_columns(s3_data_dyf, {"old_column_name": "new_column_name"})
+
+# Print result
+renamed_dyf.show()
+```
+
+---
+
 ## Functions
 
 ### 1. `dynamicframe_to_dataframe(dynamic_frame: DynamicFrame) -> DataFrame`
