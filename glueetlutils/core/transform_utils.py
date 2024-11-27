@@ -6,7 +6,7 @@ from awsglue.context import GlueContext
 from pyspark.sql.functions import udf
 from pyspark.sql.types import StringType
 
-class DataTransformUtils:
+class TransformUtils:
     """
     A comprehensive utility class for reusable data transformation functions in AWS Glue using Spark.
     """
