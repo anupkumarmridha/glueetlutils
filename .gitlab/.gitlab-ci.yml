@@ -8,6 +8,8 @@ variables:
 
 check_version:
   stage: check
+  tags:
+    - glueetlutils-ci
   script:
     - echo "Checking version change..."
     - bash .github/scripts/check_version.sh
@@ -16,6 +18,8 @@ check_version:
 
 build_package:
   stage: build
+  tags:
+    - glueetlutils-ci
   script:
     - echo "Installing dependencies and building the package..."
     - pip install setuptools wheel boto3
@@ -30,6 +34,8 @@ build_package:
 
 deploy_to_aws_codeartifact:
   stage: deploy
+  tags:
+    - glueetlutils-ci
   script:
     - echo "Configuring AWS credentials..."
     - export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
