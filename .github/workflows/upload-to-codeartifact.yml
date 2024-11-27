@@ -22,27 +22,27 @@ jobs:
       run: |
         pip install setuptools wheel twine boto3
 
-    - name: Check Version Change
-      id: version-check
-      run: |
-        # Extract the current version from setup.py
-        CURRENT_VERSION=$(python -c "import setup; print(setup.setup_args['version'])")
-        
-        # Compare with the previous version
-        git fetch --depth=1 origin main
-        PREVIOUS_VERSION=$(git show origin/main:setup.py | python -c "import setup; print(setup.setup_args['version'])")
-        
-        echo "Current Version: $CURRENT_VERSION"
-        echo "Previous Version: $PREVIOUS_VERSION"
-        
-        if [ "$CURRENT_VERSION" = "$PREVIOUS_VERSION" ]; then
-          echo "No version change detected. Skipping build and upload."
-          echo "version_changed=false" >> $GITHUB_ENV
-          exit 0
-        else
-          echo "Version change detected."
-          echo "version_changed=true" >> $GITHUB_ENV
-        fi
+        - name: Check Version Change
+        id: version-check
+        run: |
+          # Extract the current version from setup.py using regex
+          CURRENT_VERSION=$(grep -oP "(?<=version=\")[^\"]+" setup.py)
+          
+          # Compare with the previous version in the main branch
+          git fetch --depth=1 origin main
+          PREVIOUS_VERSION=$(git show origin/main:setup.py | grep -oP "(?<=version=\")[^\"]+")
+      
+          echo "Current Version: $CURRENT_VERSION"
+          echo "Previous Version: $PREVIOUS_VERSION"
+      
+          if [ "$CURRENT_VERSION" = "$PREVIOUS_VERSION" ]; then
+            echo "No version change detected. Skipping build and upload."
+            echo "version_changed=false" >> $GITHUB_ENV
+            exit 0
+          else
+            echo "Version change detected."
+            echo "version_changed=true" >> $GITHUB_ENV
+          fi      
 
     - name: Exit if No Version Change
       if: env.version_changed == 'false'
