@@ -11,6 +11,8 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 0 # Fetch the entire commit history
 
     - name: Push to GitLab Dev Branch
       env:
@@ -18,7 +20,7 @@ jobs:
       run: |
         # Add GitLab remote
         git remote add gitlab https://oauth2:$GITLAB_PAT@gitlab.presidio.com/amridha/glueetlutils.git
-        # Fetch latest changes from GitLab's dev branch
+        # Fetch full history of the dev branch
         git fetch gitlab dev || true
-        # Force push to the dev branch on GitLab
+        # Push GitHub main branch to GitLab dev branch, overwriting if necessary
         git push --force gitlab main:dev
