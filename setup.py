@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="glueetlutils",  # Updated name to match the new package structure and purpose.
-    version="0.1.0",
+    version="0.1.1",
     description="Reusable utilities for data transformation, quality checks, and loading in AWS Glue using PySpark",
     author="Anup Kumar Mridha",
     author_email="anupkumarmridha.net@gmail.com",
