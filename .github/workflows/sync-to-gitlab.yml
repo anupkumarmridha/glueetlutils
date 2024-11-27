@@ -1,4 +1,4 @@
-name: Sync to GitLab
+name: Sync to GitLab Dev
 
 on:
   push:
@@ -12,13 +12,13 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v3
 
-    - name: Push to GitLab
+    - name: Push to GitLab Dev Branch
       env:
         GITLAB_PAT: ${{ secrets.GITLAB_PAT }}
       run: |
         # Add GitLab remote
         git remote add gitlab https://oauth2:$GITLAB_PAT@gitlab.presidio.com/amridha/glueetlutils.git
-        # Fetch latest changes from GitLab to avoid conflicts
-        git fetch gitlab main || true
-        # Force push changes to GitLab, overwriting conflicts
-        git push --force gitlab main
+        # Fetch latest changes from GitLab's dev branch
+        git fetch gitlab dev || true
+        # Force push to the dev branch on GitLab
+        git push --force gitlab main:dev
