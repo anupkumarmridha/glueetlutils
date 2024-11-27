@@ -3,7 +3,8 @@ name: Build and Upload to AWS CodeArtifact
 on:
   push:
     branches:
-      - main
+      # - main
+      - master
 
 jobs:
   build-and-upload:

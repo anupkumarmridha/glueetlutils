@@ -1,0 +1,20 @@
+name: Sync to GitLab
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync-to-gitlab:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Push to GitLab
+      env:
+        GITLAB_PAT: ${{ secrets.GITLAB_PAT }}
+      run: |
+        git remote add gitlab https://oauth2:$GITLAB_PAT@gitlab.com/amridha/glueetlutils.git
+        git push gitlab main
