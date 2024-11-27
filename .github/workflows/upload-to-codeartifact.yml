@@ -18,29 +18,15 @@ jobs:
       with:
         python-version: '3.8'
 
-    - name: Debug setup.py
-      run: cat setup.py
-
     - name: Install Dependencies
       run: |
         pip install setuptools wheel twine boto3
 
-    - name: Check Version Change
-      id: version-check
-      run: |
-        bash .github/scripts/check_version.sh
-
-    - name: Exit if No Version Change
-      if: env.version_changed == 'false'
-      run: exit 0
-
     - name: Build the Package
-      if: env.version_changed == 'true'
       run: |
         bash .github/scripts/build_package.sh
 
     - name: Configure AWS Credentials
-      if: env.version_changed == 'true'
       uses: aws-actions/configure-aws-credentials@v3
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -49,11 +35,9 @@ jobs:
         aws-region: us-east-1
 
     - name: Authenticate with AWS CodeArtifact
-      if: env.version_changed == 'true'
       run: |
         bash .github/scripts/authenticate_codeartifact.sh
 
     - name: Upload to AWS CodeArtifact
-      if: env.version_changed == 'true'
       run: |
         bash .github/scripts/upload_to_codeartifact.sh
