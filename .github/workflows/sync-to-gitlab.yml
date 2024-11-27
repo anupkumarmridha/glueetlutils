@@ -18,5 +18,7 @@ jobs:
       run: |
         # Add GitLab remote
         git remote add gitlab https://oauth2:$GITLAB_PAT@gitlab.presidio.com/amridha/glueetlutils.git
-        # Push changes to GitLab
-        git push gitlab main
+        # Fetch latest changes from GitLab to avoid conflicts
+        git fetch gitlab main || true
+        # Force push changes to GitLab, overwriting conflicts
+        git push --force gitlab main
