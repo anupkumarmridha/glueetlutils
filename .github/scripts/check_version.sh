@@ -1,18 +1,14 @@
 #!/bin/bash
 
-# Fetch the latest changes from the main branch
-echo "Fetching origin/main"
-git fetch origin +refs/heads/main:refs/remotes/origin/main --depth=1
-git reset --hard origin/main
-
-# Extract the current version from setup.py
+# Extract the current version from the local setup.py
 echo "Extracting current version"
 CURRENT_VERSION=$(grep -oP "(?<=version=\")[^\"]+" setup.py || echo "unknown")
 echo "Current Version: $CURRENT_VERSION"
 
-# Extract the previous version from the main branch
-echo "Extracting previous version"
-PREVIOUS_VERSION=$(git show origin/main:setup.py | grep -oP "(?<=version=\")[^\"]+" || echo "unknown")
+# Find the last commit that modified setup.py and extract the version from that commit
+echo "Finding last commit that modified setup.py"
+LAST_MODIFIED_COMMIT=$(git log -n 1 --format=format:%H -- setup.py)
+PREVIOUS_VERSION=$(git show "$LAST_MODIFIED_COMMIT:setup.py" | grep -oP "(?<=version=\")[^\"]+" || echo "unknown")
 echo "Previous Version: $PREVIOUS_VERSION"
 
 # Check if versions were successfully detected
