@@ -1,26 +1,44 @@
-# DataTransformUtils - AWS Glue Data Transformation Utility
-
-## Overview
-`DataTransformUtils` is a comprehensive utility class designed for reusable data transformation functions using AWS Glue and Spark. It simplifies common data transformation tasks on `DynamicFrame` and `DataFrame` objects in Spark, providing a range of utility functions for data cleaning, transformation, validation, and aggregation.
-
-### Prerequisites
-- AWS Glue
-- Apache Spark
-- PySpark
-- Python
-
-To incorporate the **`DataTransformUtils`** package and ensure it works seamlessly in your AWS Glue job, you need to follow these steps:
+Here’s the updated documentation to reflect the new structure and changes in the package:
 
 ---
 
-### **1. Install the Package in AWS Glue**
-AWS Glue jobs support adding external Python packages. Here’s how you set up the `DataTransformUtils` package.
+# **GlueETLUtils - AWS Glue ETL Utility**
+
+## **Overview**
+`GlueETLUtils` is a comprehensive Python package designed to simplify common ETL (Extract, Transform, Load) tasks in AWS Glue jobs using PySpark. It provides reusable utilities for data loading, transformation, quality validation, and other shared functions, streamlining AWS Glue workflows.
+
+## **Key Features**
+- **Data Loading**: Streamlined methods for loading data from S3, databases, or other sources.
+- **Data Transformation**: Utilities for renaming columns, handling null values, dropping duplicates, and more.
+- **Data Quality Validation**: Tools to enforce data quality rules such as non-null checks or distinct value constraints.
+- **Common Utilities**: Shared helpers like execution time logging and AWS Secrets Manager integration.
+
+---
+
+### **Package Structure**
+
+```
+glueetlutils/
+├── __init__.py              # Entry point for the package.
+├── core/
+│   ├── __init__.py          # Initialize submodule imports.
+│   ├── load_utils.py        # Loading and extraction-related tasks.
+│   ├── quality_utils.py     # Data quality validation tasks.
+│   ├── transform_utils.py   # Transformation and enrichment tasks.
+│   ├── common.py            # Shared utilities, e.g., helper methods.
+├── setup.py                 # Package setup script for installation.
+└── README.md                # Documentation about the package.
+```
+
+---
+
+### **1. Installation in AWS Glue**
 
 #### **Set Job Parameters**
-When creating or updating your Glue job, add the following parameters:
+When creating or updating your AWS Glue job, configure the following parameters:
 
 1. **Parameter:** `--additional-python-modules`
-   - **Value:** `datatransformutils==0.1.1`
+   - **Value:** `glueetlutils==0.1.1`
 
 2. **Parameter:** `--python-modules-installer-option`
    - **Value:**
@@ -30,59 +48,137 @@ When creating or updating your Glue job, add the following parameters:
 
 ---
 
-### **2. Generating the `--python-modules-installer-option` Value**
+### **2. Generate `--python-modules-installer-option` Value**
 
-#### **Authenticate with AWS CLI**
-1. Run the following command to authenticate with CodeArtifact:
+#### **Step 1: Authenticate with AWS CLI**
+1. Authenticate with AWS CodeArtifact:
    ```bash
    aws codeartifact login --tool pip --repository <REPO-NAME> --domain <DOMAIN-NAME> --domain-owner <ACCOUNT-ID>
    ```
 
-2. Use the **`generate_codeartifact_url.sh`** script to generate the installer URL:
-   - Place the `generate_codeartifact_url.sh` script in your local repository.
-   - Execute the script:
+2. Use the **`generate_codeartifact_url.sh`** script to create the installer URL:
+   - Place the script in your repository and execute it:
      ```bash
      ./generate_codeartifact_url.sh
      ```
-   - The result will be saved in the `pip_codeartifact_url.txt` file.
+   - The URL will be saved in the `pip_codeartifact_url.txt` file.
 
-3. Extract the value from `pip_codeartifact_url.txt` and use it for `--python-modules-installer-option`.
-
----
-
-### **3. Glue Network Connection**
-If your Glue job runs in a **VPC**, you need to configure a **Glue Network Connection** to access the CodeArtifact repository:
-
-1. Go to the **AWS Glue Console** → **Connections** → **Create Connection**.
-2. Choose **VPC** for the connection type.
-3. Provide the subnet and security group details that allow access to the CodeArtifact endpoint.
-4. Attach this connection to your Glue job under **Network Options**.
+3. Extract the URL from `pip_codeartifact_url.txt` and use it in your Glue job configuration.
 
 ---
 
-### **4. Python Script Example**
-Here’s how to initialize and use the `DataTransformUtils` class in your Glue job:
+### **3. Network Configuration for Glue Jobs**
+If your Glue job runs in a VPC, set up a Glue network connection to allow access to the CodeArtifact repository:
 
+1. Navigate to **AWS Glue Console** → **Connections** → **Create Connection**.
+2. Select **VPC** as the connection type.
+3. Provide the required subnet and security group details for accessing the CodeArtifact endpoint.
+4. Attach the connection to your Glue job under **Network Options**.
+
+---
+
+### **4. Using the Package in Python**
+Here’s how to use the `GlueETLUtils` package in your Glue job:
+
+#### **Importing and Initialization**
 ```python
 from awsglue.context import GlueContext
 from pyspark.context import SparkContext
-from datatransformutils import DataTransformUtils
+from glueetlutils.core import LoadUtils, TransformUtils, QualityUtils, CommonUtils
 
 sc = SparkContext()
 glueContext = GlueContext(sc)
 
-# Initialize DataTransformUtils
-data_transform_utils = DataTransformUtils(glueContext)
-
-# Example Usage
-s3_data_dyf = glueContext.create_dynamic_frame.from_catalog(database="your_db", table_name="your_table")
-
-# Rename columns using DataTransformUtils
-renamed_dyf = data_transform_utils.rename_columns(s3_data_dyf, {"old_column_name": "new_column_name"})
-
-# Print result
-renamed_dyf.show()
+# Initialize utilities
+load_utils = LoadUtils(glueContext)
+transform_utils = TransformUtils(glueContext)
+quality_utils = QualityUtils(glueContext)
+common_utils = CommonUtils()
 ```
+
+---
+
+### **Examples**
+
+#### **1. Data Loading**
+Load data from an S3 location using `LoadUtils`:
+```python
+# Load data from S3
+s3_data_dyf = load_utils.load_from_s3("s3://my-bucket/my-folder/", format="parquet")
+```
+
+---
+
+#### **2. Data Transformation**
+Rename columns or handle missing values using `TransformUtils`:
+```python
+# Rename columns
+renamed_dyf = transform_utils.rename_columns(s3_data_dyf, {"old_col": "new_col"})
+
+# Handle null values
+handled_nulls_dyf = transform_utils.handle_null_values(renamed_dyf, {"new_col": "default_value"})
+```
+
+---
+
+#### **3. Data Quality Validation**
+Ensure data meets quality requirements using `QualityUtils`:
+```python
+# Validate that a column has no null values
+quality_utils.validate_column_not_null(handled_nulls_dyf, "new_col")
+```
+
+---
+
+#### **4. Logging Execution Time**
+Use the `log_time` decorator from `CommonUtils` to log function execution times:
+```python
+@common_utils.log_time
+def my_etl_function():
+    # ETL logic
+    pass
+```
+
+---
+
+#### **5. AWS Secrets Manager Integration**
+Retrieve secrets for a Redshift connection or other credentials:
+```python
+secrets = common_utils.get_secret(secret_name="my_secret_name", region_name="us-east-1")
+```
+
+---
+
+### **Key Dependencies**
+- `PySpark`: Required for Spark transformations.
+- `boto3`: For AWS Secrets Manager integration.
+- `botocore`: A dependency for `boto3`.
+
+---
+
+<!-- ### **Tests**
+Unit tests are located in the `tests/` directory. Use `pytest` to run them:
+```bash
+pytest tests/
+``` -->
+
+---
+
+### **Development Workflow**
+1. **Install Locally for Testing**
+   ```bash
+   pip install -e .
+   ```
+
+2. **Build Distribution**
+   ```bash
+   python setup.py sdist bdist_wheel
+   ```
+
+3. **Publish to CodeArtifact or PyPI**
+   ```bash
+   twine upload dist/*
+   ```
 
 ---
 
