@@ -25,24 +25,7 @@ jobs:
     - name: Check Version Change
       id: version-check
       run: |
-        # Extract the current version from setup.py using regex
-        CURRENT_VERSION=$(grep -oP "(?<=version=\")[^\"]+" setup.py)
-          
-        # Compare with the previous version in the main branch
-        git fetch --depth=1 origin main
-        PREVIOUS_VERSION=$(git show origin/main:setup.py | grep -oP "(?<=version=\")[^\"]+")
-      
-        echo "Current Version: $CURRENT_VERSION"
-        echo "Previous Version: $PREVIOUS_VERSION"
-      
-        if [ "$CURRENT_VERSION" = "$PREVIOUS_VERSION" ]; then
-          echo "No version change detected. Skipping build and upload."
-          echo "version_changed=false" >> $GITHUB_ENV
-          exit 0
-        else
-          echo "Version change detected."
-          echo "version_changed=true" >> $GITHUB_ENV
-        fi
+        bash .github/scripts/check_version.sh
 
     - name: Exit if No Version Change
       if: env.version_changed == 'false'
@@ -50,7 +33,7 @@ jobs:
 
     - name: Build the Package
       run: |
-        python setup.py sdist bdist_wheel
+        bash .github/scripts/build_package.sh
 
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v3
@@ -62,18 +45,8 @@ jobs:
 
     - name: Authenticate with AWS CodeArtifact
       run: |
-        TWINE_USERNAME=aws
-        TWINE_PASSWORD=$(aws codeartifact get-authorization-token --domain presidio-data --domain-owner 894811220469 --region us-east-1 --query authorizationToken --output text)
-        TWINE_REPOSITORY_URL=$(aws codeartifact get-repository-endpoint --domain presidio-data --domain-owner 894811220469 --repository datatransformutils-repo --region us-east-1 --format pypi --query repositoryEndpoint --output text)
-        echo "::add-mask::$TWINE_PASSWORD"
-        echo "TWINE_USERNAME=$TWINE_USERNAME" >> $GITHUB_ENV
-        echo "TWINE_PASSWORD=$TWINE_PASSWORD" >> $GITHUB_ENV
-        echo "TWINE_REPOSITORY_URL=$TWINE_REPOSITORY_URL" >> $GITHUB_ENV
+        bash .github/scripts/authenticate_codeartifact.sh
 
     - name: Upload to AWS CodeArtifact
-      env:
-        TWINE_USERNAME: ${{ env.TWINE_USERNAME }}
-        TWINE_PASSWORD: ${{ env.TWINE_PASSWORD }}
-        TWINE_REPOSITORY_URL: ${{ env.TWINE_REPOSITORY_URL }}
       run: |
-        twine upload --repository-url $TWINE_REPOSITORY_URL dist/*
+        bash .github/scripts/upload_to_codeartifact.sh
