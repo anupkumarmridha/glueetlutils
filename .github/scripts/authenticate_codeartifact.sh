@@ -12,7 +12,7 @@ TWINE_PASSWORD=$(aws codeartifact get-authorization-token \
 TWINE_REPOSITORY_URL=$(aws codeartifact get-repository-endpoint \
   --domain presidio-data \
   --domain-owner 894811220469 \
-  --repository datatransformutils-repo \
+  --repository glueetlutils \
   --region us-east-1 \
   --format pypi \
   --query repositoryEndpoint \
