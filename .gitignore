@@ -1,1 +1,44 @@
+# Ignore Python cache files and directories
+__pycache__/
+*.py[cod]
+
+# Ignore environment files
 .env
+
+# Ignore build artifacts
+build/
+dist/
+*.egg-info/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore virtual environment directories
+venv/
+.env/
+.env.bak/
+
+# Ignore coverage and test artifacts
+.coverage
+*.cover
+*.log
+.tox/
+nosetests.xml
+coverage.xml
+*.coveragerc
+
+# Ignore IDE and editor configurations
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Ignore packaging artifacts
+*.tar.gz
+*.zip
+*.whl
+
+# Ignore temporary or backup files
+*.bak
+*.tmp
